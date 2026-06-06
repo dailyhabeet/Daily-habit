@@ -11,6 +11,60 @@ const THEMES = {
 const ThemeCtx = createContext(THEMES.dark);
 const useT = () => useContext(ThemeCtx);
 
+// ---- Access gate (single shared password for launch) ----
+const ACCESS_PASSWORD = "Rooted2026";
+const ACCESS_KEY = "dh_access_ok";
+
+function AccessGate({ children }) {
+  const [ok, setOk] = useState(() => {
+    try { return localStorage.getItem(ACCESS_KEY) === "yes"; } catch { return false; }
+  });
+  const [entry, setEntry] = useState("");
+  const [error, setError] = useState(false);
+  if (ok) return children;
+  const tryUnlock = () => {
+    if (entry.trim() === ACCESS_PASSWORD) {
+      try { localStorage.setItem(ACCESS_KEY, "yes"); } catch {}
+      setOk(true);
+    } else {
+      setError(true);
+    }
+  };
+  const T = THEMES.dark;
+  return (
+    <div style={{ minHeight: "100vh", background: T.bg, display: "flex", justifyContent: "center", alignItems: "center", fontFamily: T.bf, padding: "24px" }}>
+      <div style={{ width: "100%", maxWidth: 360, background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.r, padding: "32px 24px", textAlign: "center" }}>
+        <div style={{ fontSize: "2.4rem", marginBottom: 6 }}>✝️</div>
+        <div style={{ color: T.gold, letterSpacing: 4, fontSize: "0.85rem", marginBottom: 12 }}>✦ ✦ ✦</div>
+        <h1 style={{ fontFamily: T.hf, color: T.text, fontSize: "1.6rem", margin: "0 0 6px", lineHeight: 1.2 }}>
+          Daily <em style={{ color: T.gold }}>Habit</em>
+        </h1>
+        <p style={{ color: T.mid, fontSize: "0.85rem", lineHeight: 1.6, margin: "0 0 20px" }}>
+          Enter your access code to begin. You'll only need to do this once on this device.
+        </p>
+        <input
+          type="password"
+          value={entry}
+          onChange={(e) => { setEntry(e.target.value); setError(false); }}
+          onKeyDown={(e) => { if (e.key === "Enter") tryUnlock(); }}
+          placeholder="Access code"
+          style={{ width: "100%", background: T.ib, border: `2px solid ${error ? T.wine : T.border}`, borderRadius: T.rs, color: T.text, padding: "11px 13px", fontSize: "1rem", outline: "none", marginBottom: 10, textAlign: "center" }}
+        />
+        {error && <div style={{ color: T.wine, fontSize: "0.78rem", marginBottom: 10 }}>That code isn't right. Please check and try again.</div>}
+        <button
+          onClick={tryUnlock}
+          style={{ width: "100%", background: T.gold, color: "#1a1a2e", border: "none", borderRadius: 20, padding: "12px", fontWeight: "bold", fontSize: "0.95rem", cursor: "pointer" }}
+        >
+          Unlock
+        </button>
+        <p style={{ color: T.faint, fontSize: "0.7rem", marginTop: 16, lineHeight: 1.5 }}>
+          Don't have a code yet? Get access at dailyhabeet.com
+        </p>
+      </div>
+    </div>
+  );
+}
+
 const DAYS = [
   { day:1, name:"Monday",    theme:"Foundation", a:{ book:"Genesis 1-2",        sub:"The Creation Account",        focus:"God as Creator; your identity as His creation" }, b:{ book:"Psalm 1-3",          sub:"The Blessed Man",            focus:"Meditating on God's word day and night" } },
   { day:2, name:"Tuesday",   theme:"Faith",      a:{ book:"Proverbs 3",         sub:"Trust in the Lord",           focus:"Leaning not on your own understanding" },        b:{ book:"Hebrews 11",         sub:"The Hall of Faith",          focus:"Faith as the substance of things hoped for" } },
@@ -101,6 +155,10 @@ function fmtD(ts){const d=new Date(ts),t=new Date();if(d.toDateString()===t.toDa
 function doCascade(di,side,draft,cR){const u={[`${di}-${side}`]:{book:draft.book.trim(),sub:draft.sub.trim(),focus:draft.focus.trim()}};const m=draft.book.trim().match(/^(.+?)\s+(\d+)(?:[-](\d+))?$/);for(let i=di+1;i<7;i++){const off=i-di,def=DAYS[i][side];let bk=draft.book.trim();if(m){const st=+m[2],en=m[3]?+m[3]:st,sp=en-st;const ns=en+1+(off-1)*(sp+1);bk=`${m[1]} ${ns}${sp>0?`-${ns+sp}`:""}`;}else bk=`${draft.book.trim()} (Day ${i+1})`;u[`${i}-${side}`]={book:bk,sub:draft.sub.trim()||def.sub,focus:draft.focus.trim()||def.focus};}return u;}
 
 export default function App(){
+  return (<AccessGate><MainApp/></AccessGate>);
+}
+
+function MainApp(){
   const[ob,setOb]=useState(()=>LS.get("br_ob",false));
   const[names,setNames]=useState(()=>LS.get("br_names",{a:"",b:""}));
   const[au,setAu]=useState(()=>LS.get("br_au",null));
