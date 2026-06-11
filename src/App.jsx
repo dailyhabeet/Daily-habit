@@ -172,7 +172,6 @@ function MainApp(){
   const[toast,setToast]=useState(null);
   const[qIdx,setQIdx]=useState(0);
   const[openDay,setOpenDay]=useState(null);
-  const[unread,setUnread]=useState(0);
   const T=THEMES[tid]||THEMES.dark;
   useEffect(()=>LS.set("br_ob",ob),[ob]);
   useEffect(()=>LS.set("br_names",names),[names]);
@@ -183,7 +182,6 @@ function MainApp(){
   useEffect(()=>LS.set("br_cr",cR),[cR]);
   useEffect(()=>LS.set("br_theme",tid),[tid]);
   useEffect(()=>LS.set("br_hist",hist),[hist]);
-  useEffect(()=>{if(tab==="chat")setUnread(0);},[tab]);
   const toast_=useCallback(m=>{setToast(m);setTimeout(()=>setToast(null),3000);},[]);
   const archiveWeek=useCallback(ch=>{
     const dA=DAYS.filter((_,i)=>ch[`${i}-a`]).length,dB=DAYS.filter((_,i)=>ch[`${i}-b`]).length;
@@ -194,16 +192,14 @@ function MainApp(){
   const sendMsg=useCallback((text,type="text",meta=null)=>{
     if(!text.trim()&&type==="text")return;
     setMsgs(p=>[...p,{id:Date.now(),from:au,text,type,meta,ts:Date.now()}]);
-    if(tab!=="chat")setUnread(u=>u+1);
-  },[au,tab]);
+  },[au]);
   const toggle=(di,side)=>{
     setChecks(prev=>{
       const next={...prev,[`${di}-${side}`]:!prev[`${di}-${side}`]};
       if(next[`${di}-${side}`]){
-        const nm=side==="a"?(names.a||"Partner A"):(names.b||"Partner B"),day=DAYS[di];
-        toast_(`${nm} - Day ${di+1} complete!`);
-        sendMsg("","completion",{di,side,book:day[side].book,dayName:day.name,theme:day.theme});
-        if(DAYS.every((_,i)=>next[`${i}-a`]&&next[`${i}-b`]))setTimeout(()=>toast_("Perfect week! Both done!"),900);
+        const nm=side==="a"?(names.a||"Reading"):(names.b||"Reading");
+        toast_(`Day ${di+1} ${side==="a"?"morning":"evening"} complete!`);
+        if(DAYS.every((_,i)=>next[`${i}-a`]&&next[`${i}-b`]))setTimeout(()=>toast_("Perfect week! Every reading done!"),900);
       }
       return next;
     });
@@ -211,9 +207,9 @@ function MainApp(){
   const fullReset=useCallback(()=>{
     LS.clear();
     setOb(false);setNames({a:"",b:""});setAu(null);setChecks({});
-    setNotes({a:"",b:""});setMsgs([]);setCR({});setHist([]);setTab("home");setUnread(0);
+    setNotes({a:"",b:""});setMsgs([]);setCR({});setHist([]);setTab("home");
   },[]);
-  const nA=names.a||"Partner A",nB=names.b||"Partner B";
+  const nA=names.a||"Track A",nB=names.b||"Track B";
   const dA=DAYS.filter((_,i)=>checks[`${i}-a`]).length,dB=DAYS.filter((_,i)=>checks[`${i}-b`]).length;
   let streak=0;for(let i=0;i<7;i++){if(checks[`${i}-a`]||checks[`${i}-b`])streak++;else break;}
   const done_=({names:n,tid:t,au:u})=>{setNames(n);setTid(t);setAu(u);setOb(true);};
@@ -227,11 +223,10 @@ function MainApp(){
       {tab==="schedule"&&<ScheduleScreen checks={checks} toggle={toggle} openDay={openDay} setOpenDay={setOpenDay} nA={nA} nB={nB} au={au} cR={cR} setCR={setCR} toast_={toast_}/>}
       {tab==="progress"&&<ProgressScreen checks={checks} dA={dA} dB={dB} streak={streak} nA={nA} nB={nB} setChecks={setChecks} toast_={toast_} archiveWeek={archiveWeek} hist={hist}/>}
       {tab==="notes"&&<NotesScreen notes={notes} setNotes={setNotes} nA={nA} nB={nB} au={au}/>}
-      {tab==="chat"&&<ChatScreen msgs={msgs} sendMsg={sendMsg} au={au} nA={nA} nB={nB} setUnread={setUnread}/>}
       {tab==="quiz"&&<QuizScreen nA={nA} nB={nB} au={au} toast_={toast_}/>}
       {tab==="growth"&&<GrowthScreen hist={hist} nA={nA} nB={nB}/>}
       {tab==="settings"&&<SettingsScreen names={names} au={au} setAu={setAu} toast_={toast_} setChecks={setChecks} setNotes={setNotes} setMsgs={setMsgs} setCR={setCR} tid={tid} setTid={setTid} archiveWeek={archiveWeek} checks={checks} setHist={setHist} fullReset={fullReset}/>}
-      <BottomNav tab={tab} setTab={setTab} unread={unread}/>
+      <BottomNav tab={tab} setTab={setTab}/>
       {toast&&<div role="status" aria-live="polite" style={{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:T.sage,color:"#fff",padding:"9px 16px",borderRadius:20,fontSize:"0.8rem",fontWeight:"bold",boxShadow:"0 4px 20px rgba(0,0,0,0.4)",zIndex:100,whiteSpace:"nowrap",maxWidth:300,textAlign:"center"}}>{toast}</div>}
     </div></div>
   </ThemeCtx.Provider>);
@@ -250,8 +245,8 @@ function Onboard({onDone,tid,setTid}){
   <div style={{width:"100%",maxWidth:430,minHeight:"100vh",background:T.surface,display:"flex",flexDirection:"column"}}>
     {sid!=="welcome"&&(<div style={{padding:"12px 20px 0",flexShrink:0}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}><span style={{color:T.faint,fontSize:"0.64rem",letterSpacing:1}}>STEP {step} OF {STEPS.length-1}</span>{step>0&&<button style={{background:"none",border:"none",color:T.muted,cursor:"pointer",fontSize:"0.76rem"}} onClick={back}>Back</button>}</div><div style={{background:T.border,borderRadius:4,height:4,overflow:"hidden"}}><div style={{width:`${pct}%`,height:"100%",background:T.gold,borderRadius:4,transition:"width 0.4s"}}/></div></div>)}
     {sid==="welcome"&&(<div style={{...BD,justifyContent:"center",textAlign:"center",gap:15}}>
-      <div><div style={{fontSize:"2.8rem",marginBottom:5}}>✝️</div><div style={{color:T.gold,letterSpacing:4,fontSize:"0.88rem",marginBottom:10}}>✦ ✦ ✦</div><h1 style={{fontFamily:T.hf,color:T.text,fontSize:`${1.7*T.fs}rem`,lineHeight:1.2,margin:"0 0 8px"}}>Daily<br/><em style={{color:T.gold}}>Habit</em></h1><p style={{color:T.mid,fontSize:`${0.84*T.fs}rem`,lineHeight:T.lh}}>A shared weekly reading companion for two accountability partners.</p></div>
-      <div style={{display:"flex",flexDirection:"column",gap:6,textAlign:"left"}}>{[["📖","7-day reading schedule","Themed daily readings for both partners"],["💬","Accountability chat","Messages, reactions and completion cards"],["🎯","Bible quiz","Questions from Scripture and your own readings"],["📈","Growth tracking","Archive weeks and track consistency over time"],["🎨","Accessibility themes","Dark, light, dyslexia-friendly, high contrast and more"]].map(([ic,tt,dd])=>(<div key={tt} style={{display:"flex",gap:8,alignItems:"flex-start",background:T.s2,border:`1px solid ${T.border}`,borderRadius:T.rs,padding:"8px 10px"}}><span style={{fontSize:"1.1rem",flexShrink:0}}>{ic}</span><div><div style={{color:T.text,fontSize:`${0.81*T.fs}rem`,fontWeight:"bold"}}>{tt}</div><div style={{color:T.muted,fontSize:"0.7rem",marginTop:1}}>{dd}</div></div></div>))}</div>
+      <div><div style={{fontSize:"2.8rem",marginBottom:5}}>✝️</div><div style={{color:T.gold,letterSpacing:4,fontSize:"0.88rem",marginBottom:10}}>✦ ✦ ✦</div><h1 style={{fontFamily:T.hf,color:T.text,fontSize:`${1.7*T.fs}rem`,lineHeight:1.2,margin:"0 0 8px"}}>Daily<br/><em style={{color:T.gold}}>Habit</em></h1><p style={{color:T.mid,fontSize:`${0.84*T.fs}rem`,lineHeight:T.lh}}>A weekly Scripture reading companion \u2014 for you, or to follow alongside a friend.</p></div>
+      <div style={{display:"flex",flexDirection:"column",gap:6,textAlign:"left"}}>{[["📖","7-day reading schedule","Two themed Scripture readings each day"],["🎯","Bible quiz","Questions from Scripture and your own readings"],["📓","Reflection notes","Journal your thoughts and prayers as you read"],["📈","Growth tracking","Archive weeks and track consistency over time"],["🎨","Accessibility themes","Dark, light, dyslexia-friendly, high contrast and more"]].map(([ic,tt,dd])=>(<div key={tt} style={{display:"flex",gap:8,alignItems:"flex-start",background:T.s2,border:`1px solid ${T.border}`,borderRadius:T.rs,padding:"8px 10px"}}><span style={{fontSize:"1.1rem",flexShrink:0}}>{ic}</span><div><div style={{color:T.text,fontSize:`${0.81*T.fs}rem`,fontWeight:"bold"}}>{tt}</div><div style={{color:T.muted,fontSize:"0.7rem",marginTop:1}}>{dd}</div></div></div>))}</div>
       <button style={PB} onClick={next}>Get Started</button>
       <p style={{color:T.faint,fontSize:"0.64rem"}}>Takes about 2 minutes to set up</p>
     </div>)}
@@ -261,19 +256,19 @@ function Onboard({onDone,tid,setTid}){
       <button style={PB} onClick={next}>Continue</button>
     </div>)}
     {sid==="names"&&(<div style={BD}>
-      <div><div style={{fontSize:"1.4rem",marginBottom:5}}>👥</div><h2 style={{fontFamily:T.hf,color:T.text,fontSize:`${1.25*T.fs}rem`,margin:"0 0 5px"}}>Who is Joining?</h2><p style={{color:T.muted,fontSize:"0.76rem",margin:0,lineHeight:T.lh}}>Enter both partners names. These are permanent once confirmed.</p></div>
-      {[{id:"obA",val:nA,set:setNA,label:"Partner A",ph:"e.g. Demi",color:T.gold},{id:"obB",val:nB,set:setNB,label:"Partner B",ph:"e.g. Emmanuel",color:T.sage}].map(f=>(<div key={f.id}><label style={{color:T.muted,fontSize:"0.72rem",display:"block",marginBottom:5}} htmlFor={f.id}>{f.label}</label><div style={{display:"flex",alignItems:"center",gap:7,background:T.ib,border:`2px solid ${f.val.trim()?f.color:T.border}`,borderRadius:T.rs,padding:"2px 10px 2px 3px"}}><div style={{width:32,height:32,borderRadius:"50%",background:f.color+"22",color:f.color,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:T.hf,fontWeight:"bold",flexShrink:0}}>{f.val.trim()?f.val.trim()[0].toUpperCase():"?"}</div><input id={f.id} style={{flex:1,background:"transparent",border:"none",color:T.text,padding:"9px 0",fontFamily:T.hf,fontSize:`${0.9*T.fs}rem`,outline:"none"}} value={f.val} maxLength={24} onChange={e=>f.set(e.target.value)} placeholder={f.ph} autoComplete="off"/></div></div>))}
+      <div><div style={{fontSize:"1.4rem",marginBottom:5}}>👥</div><h2 style={{fontFamily:T.hf,color:T.text,fontSize:`${1.25*T.fs}rem`,margin:"0 0 5px"}}>Set Up Your Tracks</h2><p style={{color:T.muted,fontSize:"0.76rem",margin:0,lineHeight:T.lh}}>Set up two reading tracks. Use both yourself, or share the plan with a friend \u2014 each of you reads on your own device.</p></div>
+      {[{id:"obA",val:nA,set:setNA,label:"Track A",ph:"e.g. your name",color:T.gold},{id:"obB",val:nB,set:setNB,label:"Track B (optional)",ph:"e.g. a friend",color:T.sage}].map(f=>(<div key={f.id}><label style={{color:T.muted,fontSize:"0.72rem",display:"block",marginBottom:5}} htmlFor={f.id}>{f.label}</label><div style={{display:"flex",alignItems:"center",gap:7,background:T.ib,border:`2px solid ${f.val.trim()?f.color:T.border}`,borderRadius:T.rs,padding:"2px 10px 2px 3px"}}><div style={{width:32,height:32,borderRadius:"50%",background:f.color+"22",color:f.color,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:T.hf,fontWeight:"bold",flexShrink:0}}>{f.val.trim()?f.val.trim()[0].toUpperCase():"?"}</div><input id={f.id} style={{flex:1,background:"transparent",border:"none",color:T.text,padding:"9px 0",fontFamily:T.hf,fontSize:`${0.9*T.fs}rem`,outline:"none"}} value={f.val} maxLength={24} onChange={e=>f.set(e.target.value)} placeholder={f.ph} autoComplete="off"/></div></div>))}
       <div style={{background:T.gold+"0b",border:`1px solid ${T.gold}1e`,borderRadius:T.rs,padding:"8px 11px",display:"flex",gap:7}}><span>🔒</span><p style={{color:T.muted,fontSize:"0.68rem",margin:0,lineHeight:T.lh}}>Names cannot be changed without a full reset which clears all data.</p></div>
-      <button style={{...PB,opacity:(nA.trim()&&nB.trim())?1:0.4}} disabled={!nA.trim()||!nB.trim()} onClick={next}>Confirm Names</button>
+      <button style={{...PB,opacity:nA.trim()?1:0.4}} disabled={!nA.trim()} onClick={()=>{if(!nB.trim())setNB("Track B");next();}}>Confirm Names</button>
     </div>)}
     {sid==="who"&&(<div style={BD}>
-      <div><div style={{fontSize:"1.4rem",marginBottom:5}}>👤</div><h2 style={{fontFamily:T.hf,color:T.text,fontSize:`${1.25*T.fs}rem`,margin:"0 0 5px"}}>Who Are You?</h2><p style={{color:T.muted,fontSize:"0.76rem",margin:0,lineHeight:T.lh}}>Select your name. You can switch partners anytime in Settings.</p></div>
+      <div><div style={{fontSize:"1.4rem",marginBottom:5}}>👤</div><h2 style={{fontFamily:T.hf,color:T.text,fontSize:`${1.25*T.fs}rem`,margin:"0 0 5px"}}>Which Track Is Yours?</h2><p style={{color:T.muted,fontSize:"0.76rem",margin:0,lineHeight:T.lh}}>Select your track. You can switch between tracks anytime in Settings.</p></div>
       <div style={{display:"flex",flexDirection:"column",gap:9}}>{[{id:"a",name:nA.trim(),color:T.gold},{id:"b",name:nB.trim(),color:T.sage}].map(p=>(<button key={p.id} style={{display:"flex",alignItems:"center",gap:11,padding:"13px 14px",borderRadius:T.r,border:`${who===p.id?"2px":"1px"} solid ${who===p.id?p.color:T.border}`,background:who===p.id?p.color+"18":T.s2,cursor:"pointer",textAlign:"left"}} onClick={()=>setWho(p.id)}><div style={{width:42,height:42,borderRadius:"50%",background:p.color+"22",color:p.color,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:T.hf,fontWeight:"bold",fontSize:"1.2rem",flexShrink:0}}>{p.name[0]?.toUpperCase()}</div><div style={{flex:1}}><div style={{color:T.text,fontFamily:T.hf,fontSize:`${0.93*T.fs}rem`}}>{p.name}</div><div style={{color:T.muted,fontSize:"0.68rem",marginTop:2}}>Tap to select</div></div><div style={{width:20,height:20,borderRadius:"50%",border:`2px solid ${who===p.id?p.color:T.border}`,background:who===p.id?p.color:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{who===p.id&&<span style={{color:"white",fontSize:"0.6rem"}}>✓</span>}</div></button>))}</div>
       <button style={{...PB,opacity:who?1:0.4}} disabled={!who} onClick={next}>That is Me</button>
     </div>)}
     {sid==="ready"&&(<div style={{...BD,justifyContent:"center",textAlign:"center",gap:17}}>
-      <div><div style={{fontSize:"3rem",marginBottom:8}}>🎉</div><h2 style={{fontFamily:T.hf,color:T.gold,fontSize:`${1.55*T.fs}rem`,margin:"0 0 8px",lineHeight:1.2}}>You are all set,<br/>{who==="a"?nA.trim():nB.trim()}!</h2><p style={{color:T.mid,fontSize:`${0.83*T.fs}rem`,lineHeight:T.lh}}>Your timetable is ready. You and <strong style={{color:who==="a"?T.sage:T.gold}}>{who==="a"?nB.trim():nA.trim()}</strong> are now accountability partners.</p></div>
-      <div style={{background:T.s2,border:`1px solid ${T.border}`,borderRadius:T.r,padding:"13px 14px",textAlign:"left"}}><div style={{color:T.gold,fontFamily:T.hf,fontSize:"0.83rem",marginBottom:9}}>Setup summary</div>{[{ic:"👤",lb:"You",v:who==="a"?nA.trim():nB.trim()},{ic:"🤝",lb:"Partner",v:who==="a"?nB.trim():nA.trim()},{ic:"🎨",lb:"Theme",v:THEMES[tid]?.label}].map(r=>(<div key={r.lb} style={{display:"flex",gap:9,alignItems:"center",marginBottom:6}}><span>{r.ic}</span><span style={{color:T.muted,fontSize:"0.72rem",minWidth:50}}>{r.lb}</span><span style={{color:T.text,fontSize:"0.81rem",fontWeight:"bold"}}>{r.v}</span></div>))}</div>
+      <div><div style={{fontSize:"3rem",marginBottom:8}}>🎉</div><h2 style={{fontFamily:T.hf,color:T.gold,fontSize:`${1.55*T.fs}rem`,margin:"0 0 8px",lineHeight:1.2}}>You are all set,<br/>{who==="a"?nA.trim():nB.trim()}!</h2><p style={{color:T.mid,fontSize:`${0.83*T.fs}rem`,lineHeight:T.lh}}>Your timetable is ready. Track <strong style={{color:who==="a"?T.sage:T.gold}}>{who==="a"?nB.trim():nA.trim()}</strong>'s readings here too, or follow along together.</p></div>
+      <div style={{background:T.s2,border:`1px solid ${T.border}`,borderRadius:T.r,padding:"13px 14px",textAlign:"left"}}><div style={{color:T.gold,fontFamily:T.hf,fontSize:"0.83rem",marginBottom:9}}>Setup summary</div>{[{ic:"👤",lb:"You",v:who==="a"?nA.trim():nB.trim()},{ic:"🤝",lb:"Track B",v:who==="a"?nB.trim():nA.trim()},{ic:"🎨",lb:"Theme",v:THEMES[tid]?.label}].map(r=>(<div key={r.lb} style={{display:"flex",gap:9,alignItems:"center",marginBottom:6}}><span>{r.ic}</span><span style={{color:T.muted,fontSize:"0.72rem",minWidth:50}}>{r.lb}</span><span style={{color:T.text,fontSize:"0.81rem",fontWeight:"bold"}}>{r.v}</span></div>))}</div>
       <div style={{background:T.gold+"0e",border:`1px solid ${T.gold}2e`,borderRadius:T.r,padding:"11px 13px"}}><p style={{color:T.mid,fontFamily:T.hf,fontStyle:"italic",fontSize:`${0.81*T.fs}rem`,lineHeight:T.lh,margin:0}}>Two are better than one — if either falls down, one can help the other up.</p><div style={{color:T.gold,fontSize:"0.67rem",marginTop:4}}>Ecclesiastes 4:9-10</div></div>
       <button style={PB} onClick={()=>onDone({names:{a:nA.trim(),b:nB.trim()},tid,au:who})}>Open My Timetable</button>
     </div>)}
@@ -347,7 +342,7 @@ function RRow({label,color,reading,done,onToggle,isMe,isCustom,di,side,cR,setCR,
           <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}><div style={{color:T.text,fontFamily:T.hf,fontSize:`${0.82*T.fs}rem`,fontWeight:"bold"}}>{reading.book}</div>{isCustom&&<span style={{background:color+"25",color,fontSize:"0.52rem",padding:"1px 4px",borderRadius:5}}>EDITED</span>}</div>
           <div style={{color:T.muted,fontSize:`${0.66*T.fs}rem`,marginTop:1}}>{reading.sub}</div>
           {reading.focus&&<div style={{color:T.faint,fontSize:`${0.64*T.fs}rem`,fontStyle:"italic",marginTop:2}}>💡 {reading.focus}</div>}
-          {!isMe&&<div style={{color,fontSize:"0.62rem",marginTop:2}}>👁 Partner</div>}
+          {!isMe&&<div style={{color,fontSize:"0.62rem",marginTop:2}}>Other track</div>}
         </div>
       </div>
       <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flexShrink:0}}>
@@ -392,54 +387,6 @@ function NotesScreen({notes,setNotes,nA,nB,au}){
   </div>);
 }
 
-function ChatScreen({msgs,sendMsg,au,nA,nB,setUnread}){
-  const T=useT();
-  const[input,setInput]=useState("");
-  const[showQ,setShowQ]=useState(false);
-  const[replyTo,setReplyTo]=useState(null);
-  const[reacts,setReacts]=useState(()=>LS.get("br_react",{}));
-  const bottomRef=useRef(null);
-  const myC=au==="a"?T.gold:T.sage,pName=au==="a"?nB:nA;
-  const EMOJIS=["🙏","❤️","🔥","✝️","😊","👏"];
-  useEffect(()=>{setUnread(0);},[setUnread]);
-  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
-  useEffect(()=>LS.set("br_react",reacts),[reacts]);
-  const submit=()=>{if(!input.trim())return;sendMsg(input.trim(),"text",replyTo?{replyTo}:null);setInput("");setReplyTo(null);};
-  const addReact=(id,e)=>setReacts(p=>{const k=`${id}-${e}`,c=p[k]||[];return{...p,[k]:c.includes(au)?c.filter(u=>u!==au):[...c,au]};});
-  const grouped=[];let lastD=null;msgs.forEach(m=>{const d=fmtD(m.ts);if(d!==lastD){grouped.push({type:"date",label:d});lastD=d;}grouped.push({type:"msg",msg:m});});
-  return(<div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 64px)",overflow:"hidden"}}>
-    <div style={{background:T.s2,borderBottom:`1px solid ${T.border}`,padding:"9px 13px",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}><div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:34,height:34,borderRadius:"50%",background:`${myC}22`,color:myC,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:T.hf,fontWeight:"bold",fontSize:"0.95rem"}}>{pName[0]?.toUpperCase()}</div><div><div style={{color:T.text,fontFamily:T.hf,fontSize:"0.9rem"}}>{pName}</div><div style={{color:T.muted,fontSize:"0.63rem"}}>Accountability partner</div></div></div><span>✝️</span></div>
-    <div style={{flex:1,overflowY:"auto",padding:"9px 9px 6px",display:"flex",flexDirection:"column",gap:4,background:T.surface}}>
-      {grouped.length===0&&(<div style={{textAlign:"center",padding:"34px 16px"}}><div style={{fontSize:"2rem",marginBottom:9}}>🕊️</div><div style={{color:T.muted,fontFamily:T.hf,fontStyle:"italic",fontSize:"0.85rem",lineHeight:T.lh}}>Two are better than one — if either falls down, one can help the other up.</div><div style={{color:T.gold,fontSize:"0.66rem",marginTop:5}}>Ecclesiastes 4:9-10</div></div>)}
-      {grouped.map((item,idx)=>{
-        if(item.type==="date")return(<div key={idx} style={{display:"flex",justifyContent:"center",margin:"5px 0"}}><span style={{background:T.s2,color:T.muted,fontSize:"0.6rem",padding:"2px 8px",borderRadius:8}}>{item.label}</span></div>);
-        const m=item.msg,isMe=m.from===au,sC=m.from==="a"?T.gold:T.sage;
-        const replied=m.meta?.replyTo?msgs.find(x=>x.id===m.meta.replyTo.id):null;
-        return(<div key={m.id} style={{display:"flex",flexDirection:"column",alignItems:isMe?"flex-end":"flex-start",marginBottom:1}}>
-          {!isMe&&<div style={{color:sC,fontSize:"0.6rem",marginLeft:9,marginBottom:1}}>{m.from==="a"?nA:nB}</div>}
-          {m.type==="completion"?(<div style={{background:T.s2,border:`1px solid ${T.gold}30`,borderRadius:T.rs,padding:"8px 11px",display:"flex",alignItems:"center",gap:9,maxWidth:"85%"}}><span style={{fontSize:"1.2rem"}}>{EM[m.meta?.theme]||"📖"}</span><div><div style={{color:sC,fontSize:"0.65rem",fontWeight:"bold"}}>READING COMPLETE</div><div style={{color:T.text,fontFamily:T.hf,fontSize:"0.81rem"}}>{m.from==="a"?nA:nB} - Day {(m.meta?.di??0)+1}</div><div style={{color:T.muted,fontSize:"0.67rem",marginTop:1}}>{m.meta?.book} - {m.meta?.dayName}</div></div></div>)
-          :(<div style={{maxWidth:"78%"}}>
-            {replied&&<div style={{background:T.s2,borderLeft:`3px solid ${myC}`,borderRadius:"4px 4px 0 0",padding:"3px 7px"}}><div style={{color:T.gold,fontSize:"0.6rem"}}>{replied.from==="a"?nA:nB}</div><div style={{color:T.muted,fontSize:"0.67rem",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:145}}>{replied.text}</div></div>}
-            <div style={{padding:"7px 10px",borderRadius:T.r,border:`1px solid ${isMe?myC+"55":T.border}`,background:isMe?myC+"18":T.s2,borderBottomRightRadius:isMe?3:T.r,borderBottomLeftRadius:isMe?T.r:3,wordBreak:"break-word",cursor:"pointer"}} onDoubleClick={()=>setReplyTo(m)}><span style={{color:T.text,fontSize:`${0.84*T.fs}rem`,lineHeight:T.lh,display:"block"}}>{m.text}</span><span style={{color:T.faint,fontSize:"0.59rem",display:"block",textAlign:isMe?"right":"left",marginTop:3}}>{fmt(m.ts)}</span></div>
-          </div>)}
-          <div style={{display:"flex",gap:3,marginTop:1,flexWrap:"wrap",justifyContent:isMe?"flex-end":"flex-start"}}>
-            {EMOJIS.map(e=>{const k=`${m.id}-${e}`,us=reacts[k]||[];return us.length?<button key={e} style={{background:us.includes(au)?myC+"30":T.s2,border:`1px solid ${us.includes(au)?myC+"55":T.border}`,borderRadius:16,padding:"1px 5px",cursor:"pointer",fontSize:"0.67rem",color:T.mid}} onClick={()=>addReact(m.id,e)}>{e} {us.length}</button>:null;})}
-            <RPicker msgId={m.id} addReact={addReact} emojis={EMOJIS} myC={myC}/>
-          </div>
-        </div>);
-      })}
-      <div ref={bottomRef}/>
-    </div>
-    {replyTo&&<div style={{background:T.s2,borderTop:`1px solid ${T.border}`,padding:"6px 10px",display:"flex",alignItems:"center",gap:7,flexShrink:0}}><div style={{flex:1}}><div style={{color:T.gold,fontSize:"0.6rem"}}>Replying to {replyTo.from==="a"?nA:nB}</div><div style={{color:T.muted,fontSize:"0.69rem",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{replyTo.text}</div></div><button style={{background:"none",border:"none",color:T.muted,cursor:"pointer"}} onClick={()=>setReplyTo(null)}>✕</button></div>}
-    {showQ&&<div style={{background:T.s2,borderTop:`1px solid ${T.border}`,padding:"9px",flexShrink:0}}><div style={{color:T.gold,fontSize:"0.65rem",letterSpacing:1,marginBottom:5}}>QUICK SEND</div><div style={{display:"flex",flexWrap:"wrap",gap:5}}>{QUICK.map((v,i)=><button key={i} style={{background:T.gold+"12",border:`1px solid ${T.gold}30`,color:T.mid,padding:"4px 8px",borderRadius:16,cursor:"pointer",fontSize:"0.7rem"}} onClick={()=>{sendMsg(v);setShowQ(false);}}>{v}</button>)}</div></div>}
-    <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 9px 9px",background:T.s2,borderTop:`1px solid ${T.border}`,flexShrink:0}}><button style={{background:"none",border:"none",color:T.gold,cursor:"pointer",fontSize:"0.92rem"}} onClick={()=>setShowQ(q=>!q)}>✦</button><input style={{flex:1,background:T.ib,border:`1px solid ${T.border}`,borderRadius:16,color:T.text,padding:"7px 11px",fontSize:`${0.83*T.fs}rem`,outline:"none"}} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();submit();}}} placeholder={`Message ${pName}...`} maxLength={500}/><button style={{width:32,height:32,borderRadius:"50%",border:"none",background:myC,color:"#1a1a2e",cursor:"pointer",fontSize:"1.2rem",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:"bold",opacity:input.trim()?1:0.4}} onClick={submit} disabled={!input.trim()}>›</button></div>
-  </div>);
-}
-function RPicker({msgId,addReact,emojis,myC}){
-  const T=useT();
-  const[open,setOpen]=useState(false);
-  return(<div style={{position:"relative"}}><button style={{background:T.s2,border:`1px solid ${T.border}`,borderRadius:16,padding:"1px 5px",cursor:"pointer",fontSize:"0.67rem",color:T.muted}} onClick={()=>setOpen(o=>!o)}>+😊</button>{open&&<div style={{position:"absolute",bottom:"110%",left:0,background:T.surface,border:`1px solid ${T.border}`,borderRadius:T.rs,padding:"5px 7px",display:"flex",gap:4,zIndex:20,boxShadow:"0 4px 14px rgba(0,0,0,0.3)"}}>{emojis.map(e=><button key={e} style={{background:"none",border:"none",cursor:"pointer",fontSize:"0.95rem",padding:1}} onClick={()=>{addReact(msgId,e);setOpen(false);}}>{e}</button>)}</div>}</div>);
-}
 
 function QuizScreen({nA,nB,au,toast_}){
   const T=useT();
@@ -535,7 +482,7 @@ function GrowthScreen({hist,nA,nB}){
   const pB=n?Math.round(hist.reduce((s,w)=>s+w.doneB,0)/n*10)/10:0;
   const bS=n?Math.max(...hist.map(w=>w.streak)):0;
   const C={background:T.s2,border:`1px solid ${T.border}`,borderRadius:T.r,padding:"13px"};
-  if(!n)return(<div style={{flex:1,overflowY:"auto",padding:"20px 15px 86px",display:"flex",flexDirection:"column",gap:13,alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center",padding:"24px 14px"}}><div style={{fontSize:"2.6rem",marginBottom:9}}>🌱</div><h2 style={{fontFamily:T.hf,color:T.text,fontSize:"1.18rem",margin:"0 0 7px"}}>Your Growth Journey</h2><p style={{color:T.muted,fontSize:"0.77rem",lineHeight:T.lh}}>Complete your first week then tap <strong style={{color:T.gold}}>Archive and Start New Week</strong> in Progress to begin tracking.</p><div style={{marginTop:14,...C,textAlign:"left"}}><div style={{color:T.gold,fontSize:"0.73rem",fontWeight:"bold",marginBottom:6}}>What gets tracked:</div>{["📖 Days read per partner","🔥 Best streak","🎯 Quiz high scores","🏆 Perfect week achievements","📅 Week date"].map((l,i)=><div key={i} style={{color:T.muted,fontSize:"0.71rem",marginBottom:2}}>{l}</div>)}</div></div></div>);
+  if(!n)return(<div style={{flex:1,overflowY:"auto",padding:"20px 15px 86px",display:"flex",flexDirection:"column",gap:13,alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center",padding:"24px 14px"}}><div style={{fontSize:"2.6rem",marginBottom:9}}>🌱</div><h2 style={{fontFamily:T.hf,color:T.text,fontSize:"1.18rem",margin:"0 0 7px"}}>Your Growth Journey</h2><p style={{color:T.muted,fontSize:"0.77rem",lineHeight:T.lh}}>Complete your first week then tap <strong style={{color:T.gold}}>Archive and Start New Week</strong> in Progress to begin tracking.</p><div style={{marginTop:14,...C,textAlign:"left"}}><div style={{color:T.gold,fontSize:"0.73rem",fontWeight:"bold",marginBottom:6}}>What gets tracked:</div>{["📖 Days read per track","🔥 Best streak","🎯 Quiz high scores","🏆 Perfect week achievements","📅 Week date"].map((l,i)=><div key={i} style={{color:T.muted,fontSize:"0.71rem",marginBottom:2}}>{l}</div>)}</div></div></div>);
   return(<div style={{flex:1,overflowY:"auto",padding:"20px 15px 86px",display:"flex",flexDirection:"column",gap:13}}>
     <div><h2 style={{fontFamily:T.hf,color:T.text,fontSize:"1.22rem",margin:"0 0 3px"}}>Growth Journey</h2><p style={{color:T.muted,fontSize:"0.7rem",margin:0}}>{n} week{n!==1?"s":""} tracked</p></div>
     <div style={C}><div style={{color:T.gold,fontFamily:T.hf,fontSize:"0.83rem",marginBottom:11}}>All-Time Summary</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>{[{ic:"📅",lb:"Weeks",v:n,c:T.gold},{ic:"🔥",lb:"Best Streak",v:`${bS}d`,c:T.gold},{ic:"📖",lb:`${nA} Avg`,v:`${pA}/7`,c:T.gold},{ic:"📗",lb:`${nB} Avg`,v:`${pB}/7`,c:T.sage},{ic:"🏅",lb:`${nA} Perfect`,v:hist.filter(w=>w.pA).length,c:T.gold},{ic:"🏅",lb:`${nB} Perfect`,v:hist.filter(w=>w.pB).length,c:T.sage},{ic:"🎯",lb:`${nA} Quiz`,v:n?Math.max(...hist.map(w=>w.qA)):0,c:T.gold},{ic:"🎯",lb:`${nB} Quiz`,v:n?Math.max(...hist.map(w=>w.qB)):0,c:T.sage}].map(s=>(<div key={s.lb} style={{background:T.ib,border:`1px solid ${T.border}`,borderRadius:T.rs,padding:"8px 10px"}}><div style={{fontSize:"0.9rem",marginBottom:2}}>{s.ic}</div><div style={{color:s.c,fontFamily:T.hf,fontSize:`${1.1*T.fs}rem`,fontWeight:"bold",lineHeight:1}}>{s.v}</div><div style={{color:T.faint,fontSize:"0.58rem",marginTop:2,textTransform:"uppercase",letterSpacing:0.4}}>{s.lb}</div></div>))}</div></div>
@@ -550,27 +497,26 @@ function SettingsScreen({names,au,setAu,toast_,setChecks,setNotes,setMsgs,setCR,
   const C={background:T.s2,border:`1px solid ${T.border}`,borderRadius:T.r,padding:"13px"};
   const RESETS=[
     {id:"archive",label:"Archive and Reset Week",     desc:"Saves this week to Growth history and clears reading progress.",fn:()=>{archiveWeek(checks);setChecks({});toast_("Week archived and reset!");}},
-    {id:"notes",  label:"Clear All Notes",            desc:"Permanently deletes both partners reflection notes.",          fn:()=>{setNotes({a:"",b:""});toast_("Notes cleared.");}},
+    {id:"notes",  label:"Clear All Notes",            desc:"Permanently deletes your reflection notes.",                  fn:()=>{setNotes({a:"",b:""});toast_("Notes cleared.");}},
     {id:"reads",  label:"Reset Custom Readings",      desc:"Restores all edited readings back to the default timetable.",  fn:()=>{setCR({});toast_("Readings reset.");}},
-    {id:"chat",   label:"Clear Chat History",         desc:"Permanently deletes all chat messages and reactions.",         fn:()=>{setMsgs([]);LS.set("br_react",{});toast_("Chat cleared.");}},
     {id:"growth", label:"Clear Growth History",       desc:"Permanently deletes all archived weeks. Cannot be undone.",   fn:()=>{setHist([]);toast_("Growth history cleared.");}},
     {id:"full",   label:"Full Reset (Start Over)",    desc:"Wipes everything including names. Returns to onboarding.",    fn:fullReset,danger:true},
   ];
   return(<div style={{flex:1,overflowY:"auto",padding:"20px 15px 86px",display:"flex",flexDirection:"column",gap:13}}>
     <h2 style={{fontFamily:T.hf,color:T.text,fontSize:"1.22rem",margin:0}}>Settings</h2>
-    <div style={{...C,borderColor:T.gold+"33"}}><div style={{color:T.gold,fontFamily:T.hf,fontSize:"0.83rem",marginBottom:3}}>Partners</div><p style={{color:T.faint,fontSize:"0.68rem",marginBottom:9,lineHeight:T.lh}}>Names are set once at setup. A full reset is required to change them.</p><div style={{display:"flex",gap:8}}>{[{name:names.a,color:T.gold},{name:names.b,color:T.sage}].map((p,i)=>(<div key={i} style={{flex:1,background:p.color+"0d",border:`1px solid ${p.color}44`,borderRadius:T.rs,padding:"8px 10px",display:"flex",alignItems:"center",gap:6}}><div style={{width:28,height:28,borderRadius:"50%",background:p.color+"22",color:p.color,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:T.hf,fontWeight:"bold",flexShrink:0}}>{p.name[0]?.toUpperCase()}</div><div style={{flex:1,minWidth:0}}><div style={{color:T.text,fontFamily:T.hf,fontSize:"0.83rem",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div><div style={{color:T.faint,fontSize:"0.58rem"}}>Partner {i===0?"A":"B"}</div></div><span style={{color:T.faint,fontSize:"0.74rem"}}>🔒</span></div>))}</div></div>
+    <div style={{...C,borderColor:T.gold+"33"}}><div style={{color:T.gold,fontFamily:T.hf,fontSize:"0.83rem",marginBottom:3}}>Reading tracks</div><p style={{color:T.faint,fontSize:"0.68rem",marginBottom:9,lineHeight:T.lh}}>Names are set once at setup. A full reset is required to change them.</p><div style={{display:"flex",gap:8}}>{[{name:names.a,color:T.gold},{name:names.b,color:T.sage}].map((p,i)=>(<div key={i} style={{flex:1,background:p.color+"0d",border:`1px solid ${p.color}44`,borderRadius:T.rs,padding:"8px 10px",display:"flex",alignItems:"center",gap:6}}><div style={{width:28,height:28,borderRadius:"50%",background:p.color+"22",color:p.color,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:T.hf,fontWeight:"bold",flexShrink:0}}>{p.name[0]?.toUpperCase()}</div><div style={{flex:1,minWidth:0}}><div style={{color:T.text,fontFamily:T.hf,fontSize:"0.83rem",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div><div style={{color:T.faint,fontSize:"0.58rem"}}>Track {i===0?"A":"B"}</div></div><span style={{color:T.faint,fontSize:"0.74rem"}}>🔒</span></div>))}</div></div>
     <div style={C}><div style={{color:T.gold,fontFamily:T.hf,fontSize:"0.83rem",marginBottom:3}}>Display Theme</div><p style={{color:T.muted,fontSize:"0.7rem",marginBottom:11,lineHeight:T.lh}}>Choose a theme that works best for you.</p><div style={{display:"flex",flexDirection:"column",gap:6}}>{Object.values(THEMES).map(th=>(<button key={th.id} style={{display:"flex",alignItems:"center",gap:9,padding:"9px 11px",borderRadius:T.rs,border:`${tid===th.id?"2px":"1px"} solid ${tid===th.id?T.gold:T.border}`,background:tid===th.id?T.gold+"18":T.ib,cursor:"pointer",textAlign:"left"}} onClick={()=>{setTid(th.id);toast_(`Theme: ${th.label}`);}}><span style={{fontSize:"1.2rem",flexShrink:0}}>{th.icon}</span><div style={{flex:1}}><div style={{color:tid===th.id?T.gold:T.text,fontWeight:"bold",fontSize:`${0.83*T.fs}rem`}}>{th.label}</div><div style={{color:T.muted,fontSize:"0.65rem",marginTop:1,lineHeight:1.3}}>{th.desc}</div></div>{tid===th.id&&<span style={{color:T.gold}}>✓</span>}</button>))}</div></div>
     <div style={C}><div style={{color:T.gold,fontFamily:T.hf,fontSize:"0.83rem",marginBottom:9}}>Switch Reader</div><p style={{color:T.muted,fontSize:"0.73rem",marginBottom:9}}>Reading as <strong style={{color:au==="a"?T.gold:T.sage}}>{au==="a"?names.a:names.b}</strong></p><button style={{background:"transparent",border:`1px solid ${au==="a"?T.sage:T.gold}`,color:au==="a"?T.sage:T.gold,borderRadius:20,padding:"8px 16px",cursor:"pointer",width:"100%",fontWeight:"bold",fontSize:"0.81rem"}} onClick={()=>{setAu(au==="a"?"b":"a");toast_(`Switched to ${au==="a"?names.b:names.a}`);}}>Switch to {au==="a"?names.b:names.a}</button></div>
     <div style={{...C,borderColor:T.wine+"44"}}><div style={{color:T.wine,fontFamily:T.hf,fontSize:"0.83rem",marginBottom:11}}>Reset Options</div>
       <div style={{display:"flex",flexDirection:"column",gap:7}}>{RESETS.map(r=>(<div key={r.id}>{conf!==r.id?(<button style={{background:"transparent",border:`1px solid ${r.danger?T.wine+"44":T.border}`,color:r.danger?T.wine:T.muted,padding:"8px 13px",borderRadius:18,cursor:"pointer",fontSize:"0.71rem",textAlign:"left",width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={()=>setConf(r.id)}><span>{r.label}</span><span style={{opacity:0.5}}>›</span></button>):(<div style={{background:r.danger?T.wine+"0d":T.s2,border:`1px solid ${r.danger?T.wine+"44":T.border}`,borderRadius:T.rs,padding:"10px 11px"}}><div style={{color:r.danger?T.wine:T.text,fontWeight:"bold",fontSize:`${0.78*T.fs}rem`,marginBottom:3}}>{r.label}</div><p style={{color:T.muted,fontSize:"0.69rem",lineHeight:T.lh,margin:"0 0 9px"}}>{r.desc}</p><div style={{display:"flex",gap:6}}><button style={{flex:1,background:r.danger?T.wine:T.gold,color:"white",border:"none",borderRadius:18,padding:"7px",cursor:"pointer",fontWeight:"bold",fontSize:"0.73rem"}} onClick={()=>{r.fn();setConf(null);}}>{r.danger?"Yes, Reset Everything":"Confirm"}</button><button style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:18,padding:"7px",cursor:"pointer",fontSize:"0.73rem"}} onClick={()=>setConf(null)}>Cancel</button></div></div>)}</div>))}</div>
-      <p style={{color:T.faint,fontSize:"0.64rem",marginTop:11,lineHeight:T.lh}}>Full Reset is the only way to change partner names.</p>
+      <p style={{color:T.faint,fontSize:"0.64rem",marginTop:11,lineHeight:T.lh}}>Full Reset is the only way to change track names.</p>
     </div>
   </div>);
 }
 
-function BottomNav({tab,setTab,unread}){
+function BottomNav({tab,setTab}){
   const T=useT();
-  const items=[{id:"home",ic:"🏠",lb:"Home"},{id:"schedule",ic:"📖",lb:"Schedule"},{id:"quiz",ic:"🎯",lb:"Quiz"},{id:"chat",ic:"💬",lb:"Chat",badge:unread},{id:"growth",ic:"📈",lb:"Growth"},{id:"settings",ic:"⚙️",lb:"Settings"}];
+  const items=[{id:"home",ic:"🏠",lb:"Home"},{id:"schedule",ic:"📖",lb:"Schedule"},{id:"quiz",ic:"🎯",lb:"Quiz"},{id:"growth",ic:"📈",lb:"Growth"},{id:"settings",ic:"⚙️",lb:"Settings"}];
   return(<nav style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,background:T.bg,borderTop:`1px solid ${T.border}`,display:"flex",zIndex:50,padding:"4px 0 7px"}}>
     {items.map(t=>(<button key={t.id} style={{flex:1,background:"none",border:"none",display:"flex",flexDirection:"column",alignItems:"center",gap:1,cursor:"pointer",padding:"3px 0",position:"relative"}} onClick={()=>setTab(t.id)} aria-current={tab===t.id?"page":undefined}>
       <div style={{position:"relative",display:"inline-block"}}><span style={{fontSize:"0.92rem"}}>{t.ic}</span>{t.badge>0&&<span style={{position:"absolute",top:-4,right:-6,background:T.wine,color:"white",borderRadius:"50%",width:13,height:13,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.48rem",fontWeight:"bold"}}>{t.badge}</span>}</div>
